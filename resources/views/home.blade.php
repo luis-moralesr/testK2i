@@ -33,6 +33,8 @@
 <script>
     document.addEventListener('DOMContentLoaded', function () {
 
+
+
         const storedToken = localStorage.getItem('authToken');
         const sessionToken = @json(session('token'));
         const sessionUser = @json(session('user'));

@@ -48,14 +48,15 @@ const ExcelUpload = () => {
     }
 
     try {
-      const response = await fetch('/api/store-excel-data', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json',
-        },
-        body: JSON.stringify({ data: fileData })
-      });
+        const response = await fetch('/storeData', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Accept': 'application/json',
+              'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content, // Esto asegura el token CSRF.
+            },
+            body: JSON.stringify({ data: fileData }), // Envía los datos en el cuerpo de la solicitud
+          });
 
       if (response.ok) {
         alert('Datos enviados correctamente');

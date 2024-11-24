@@ -24,6 +24,8 @@ Route::post('/api/validate-token', function (Request $request) {
     }
 });
 
+Route::post('/storeData', [App\Http\Controllers\SubirDatosController::class, 'storeExcelData']);
+
 Auth::routes();
 
 Route::get('/home', [App\Http\Controllers\HomeController::class, 'index'])->name('home');
