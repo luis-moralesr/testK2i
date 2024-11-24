@@ -16,6 +16,7 @@
     <!-- Scripts -->
     <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
     @vite(['resources/sass/app.scss', 'resources/js/app.js'])
+
 </head>
 <body>
     <div id="app">

@@ -19,6 +19,9 @@
 
                     <p><strong>Tu token:</strong> <code id="tokenText">No se proporcionó un token.</code></p>
 
+                    <div id="root"></div>
+                    @viteReactRefresh
+                    @vite('resources/js/main.jsx')
                 </div>
             </div>
 
