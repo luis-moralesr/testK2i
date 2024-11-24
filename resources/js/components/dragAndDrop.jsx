@@ -1,19 +1,18 @@
-// src/components/ExcelUpload.js
-
 import React, { useState } from 'react';
 import { useDropzone } from 'react-dropzone';
-import * as XLSX from 'xlsx';
+import * as XLSX from 'xlsx'; // Importamos la librería xlsx
 
 const ExcelUpload = () => {
-  const [fileData, setFileData] = useState(null);  // Guardará los datos leídos del Excel
+  const [fileData, setFileData] = useState(null);
+  const [headers, setHeaders] = useState([]);
   const [error, setError] = useState('');
 
   const { getRootProps, getInputProps } = useDropzone({
-    accept: '.xlsx, .xls',  // Aceptar solo archivos Excel
-    onDrop: (acceptedFiles) => handleFileUpload(acceptedFiles)
+    accept: '.xlsx, .xls', // Aceptar solo archivos Excel
+    onDrop: (acceptedFiles) => handleFileUpload(acceptedFiles) // Llamar a la función para procesar el archivo cuando se sube
   });
 
-  // Función para manejar la carga del archivo Excel
+  // Función que maneja la carga y lectura del archivo Excel
   const handleFileUpload = (files) => {
     const file = files[0];
 
@@ -21,14 +20,19 @@ const ExcelUpload = () => {
       const reader = new FileReader();
       reader.onload = (e) => {
         try {
-
           const data = new Uint8Array(e.target.result);
-          const workbook = XLSX.read(data, { type: 'array' });
-          const worksheet = workbook.Sheets[workbook.SheetNames[0]];
-          // Convertir los datos de la hoja a formato JSON
+          const workbook = XLSX.read(data, { type: 'array' }); // Leemos el archivo como un arreglo de bytes
+          const worksheet = workbook.Sheets[workbook.SheetNames[0]]; // Obtenemos la primera hoja del Excel
+
+          // Obtener las cabeceras de la primera fila
+          const sheetData = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
+          const extractedHeaders = sheetData[0]; // Primera fila como cabeceras
+          setHeaders(extractedHeaders);
+
+          // Convertimos la hoja a formato JSON, excluyendo la fila de cabeceras
           const jsonData = XLSX.utils.sheet_to_json(worksheet);
-          setFileData(jsonData);
-          setError('');
+          setFileData(jsonData);  // Almacenamos los datos en el estado
+          setError('');  // Limpiamos cualquier error previo
         } catch (error) {
           setError('Error al procesar el archivo. Asegúrate de que el archivo sea un Excel válido.');
         }
@@ -36,6 +40,33 @@ const ExcelUpload = () => {
       reader.readAsArrayBuffer(file);
     }
   };
+
+  const sendToLaravel = async () => {
+    if (!fileData) {
+      setError('No hay datos para enviar.');
+      return;
+    }
+
+    try {
+      const response = await fetch('/api/store-excel-data', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+        },
+        body: JSON.stringify({ data: fileData })
+      });
+
+      if (response.ok) {
+        alert('Datos enviados correctamente');
+      } else {
+        throw new Error('Error al enviar los datos');
+      }
+    } catch (error) {
+      setError(`Error al enviar los datos: ${error.message}`);
+    }
+  };
+
 
   return (
     <div>
@@ -46,13 +77,25 @@ const ExcelUpload = () => {
 
       {error && <p style={{ color: 'red' }}>{error}</p>}
 
-      {/* Mostrar los datos del archivo (si se cargó correctamente) */}
-      {fileData && (
+      {headers.length > 0 && (
+        <div>
+          <h3>Cabeceras del archivo:</h3>
+          <ul>
+            {headers.map((header, index) => (
+              <li key={index}>{header}</li>
+            ))}
+          </ul>
+        </div>
+      )}
+
+      {/* {fileData && (
         <div>
           <h3>Datos del archivo:</h3>
           <pre>{JSON.stringify(fileData, null, 2)}</pre>
         </div>
-      )}
+      )} */}
+
+      <button onClick={sendToLaravel} disabled={!fileData}>Enviar a Laravel</button>
     </div>
   );
 };
