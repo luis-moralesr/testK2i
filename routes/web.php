@@ -7,6 +7,7 @@ use Firebase\JWT\JWT;
 use Firebase\JWT\Key;
 use App\Http\Middleware\VerifyToken;
 
+
 // Rutas públicas
 Route::get('/', function () {
     return view('welcome');
@@ -25,6 +26,7 @@ Route::post('/api/validate-token', function (Request $request) {
 });
 
 Route::post('/storeData', [App\Http\Controllers\SubirDatosController::class, 'storeExcelData']);
+Route::get('/showData', [App\Http\Controllers\ConsultaController::class, 'showData']);
 
 Auth::routes();
 

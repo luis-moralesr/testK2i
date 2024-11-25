@@ -9,10 +9,10 @@ const ExcelUpload = () => {
 
   const { getRootProps, getInputProps } = useDropzone({
     accept: '.xlsx, .xls', // Aceptar solo archivos Excel
-    onDrop: (acceptedFiles) => handleFileUpload(acceptedFiles) // Llamar a la función para procesar el archivo cuando se sube
+    onDrop: (acceptedFiles) => handleFileUpload(acceptedFiles)
   });
 
-  // Función que maneja la carga y lectura del archivo Excel
+  // Carga y lectura del archivo Excel
   const handleFileUpload = (files) => {
     const file = files[0];
 
@@ -21,8 +21,8 @@ const ExcelUpload = () => {
       reader.onload = (e) => {
         try {
           const data = new Uint8Array(e.target.result);
-          const workbook = XLSX.read(data, { type: 'array' }); // Leemos el archivo como un arreglo de bytes
-          const worksheet = workbook.Sheets[workbook.SheetNames[0]]; // Obtenemos la primera hoja del Excel
+          const workbook = XLSX.read(data, { type: 'array' });
+          const worksheet = workbook.Sheets[workbook.SheetNames[0]];
 
           // Obtener las cabeceras de la primera fila
           const sheetData = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
@@ -31,8 +31,8 @@ const ExcelUpload = () => {
 
           // Convertimos la hoja a formato JSON, excluyendo la fila de cabeceras
           const jsonData = XLSX.utils.sheet_to_json(worksheet);
-          setFileData(jsonData);  // Almacenamos los datos en el estado
-          setError('');  // Limpiamos cualquier error previo
+          setFileData(jsonData);
+          setError('');
         } catch (error) {
           setError('Error al procesar el archivo. Asegúrate de que el archivo sea un Excel válido.');
         }
@@ -53,13 +53,16 @@ const ExcelUpload = () => {
             headers: {
               'Content-Type': 'application/json',
               'Accept': 'application/json',
-              'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content, // Esto asegura el token CSRF.
+              'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
             },
-            body: JSON.stringify({ data: fileData }), // Envía los datos en el cuerpo de la solicitud
+            body: JSON.stringify({ data: fileData }),
           });
 
       if (response.ok) {
         alert('Datos enviados correctamente');
+        setTimeout(() => {
+            location.reload();
+        }, 500);
       } else {
         throw new Error('Error al enviar los datos');
       }
@@ -78,9 +81,9 @@ const ExcelUpload = () => {
 
       {error && <p style={{ color: 'red' }}>{error}</p>}
 
-      {headers.length > 0 && (
+      {/* {headers.length > 0 && (
         <div>
-          <h3>Cabeceras del archivo:</h3>
+          <h3>Pendiente por subir</h3>
           <ul>
             {headers.map((header, index) => (
               <li key={index}>{header}</li>
@@ -89,14 +92,14 @@ const ExcelUpload = () => {
         </div>
       )}
 
-      {/* {fileData && (
+      {fileData && (
         <div>
           <h3>Datos del archivo:</h3>
           <pre>{JSON.stringify(fileData, null, 2)}</pre>
         </div>
       )} */}
 
-      <button onClick={sendToLaravel} disabled={!fileData}>Enviar a Laravel</button>
+      <button onClick={sendToLaravel} disabled={!fileData} className="btn btn-primary">Enviar a Laravel</button>
     </div>
   );
 };
@@ -106,7 +109,8 @@ const dropzoneStyle = {
   border: '2px dashed #cccccc',
   padding: '20px',
   textAlign: 'center',
-  cursor: 'pointer'
+  cursor: 'pointer',
+  margin:'2em',
 };
 
 export default ExcelUpload;

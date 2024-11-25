@@ -20,7 +20,7 @@ class Persona extends Model
 
     public function direcciones()
     {
-        return $this->hasMany(Direccion::class);
+        return $this->hasMany(Direcciones::class);
     }
 
 }

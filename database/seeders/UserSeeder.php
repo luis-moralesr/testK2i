@@ -18,6 +18,7 @@ class UserSeeder extends Seeder
             'name' => 'Luis Morales',
             'email' => 'Luis@gmail.com',
             'password' => Hash::make('Mexico2024'),
+            'role' => 'admin',
         ]);
     }
 }

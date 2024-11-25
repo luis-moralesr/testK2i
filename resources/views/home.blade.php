@@ -19,22 +19,25 @@
 
                     <p><strong>Tu token:</strong> <code id="tokenText">No se proporcionó un token.</code></p>
 
-                    <div id="root"></div>
+                    <!-- Sección root y tabla ocultas por defecto -->
+                    <div id="root" style="display:none;">
+                        <!-- Contenido para usuarios con rol admin -->
+                    </div>
+                    <br>
+                    <div id="tabla" style="display:none;">
+                        <!-- Contenido para mostrar tabla -->
+                    </div>
                     @viteReactRefresh
                     @vite('resources/js/main.jsx')
                 </div>
             </div>
-
-
+        </div>
     </div>
 </div>
 @endsection
 
 <script>
     document.addEventListener('DOMContentLoaded', function () {
-
-
-
         const storedToken = localStorage.getItem('authToken');
         const sessionToken = @json(session('token'));
         const sessionUser = @json(session('user'));
@@ -64,11 +67,22 @@
         const emailText = document.getElementById('emailText');
         const userIdText = document.getElementById('userIdText');
         const tokenText = document.getElementById('tokenText');
+        const root = document.getElementById('root');
+        const tabla = document.getElementById('tabla');
 
         if (user) {
             welcomeText.textContent = `Bienvenido, ${user.name || 'Usuario desconocido'}`;
             emailText.textContent = user.email || 'No disponible';
             userIdText.textContent = user.id || 'No disponible';
+
+            // Verificar el rol del usuario
+            if (user.role === 'admin') {
+                root.style.display = 'block';
+                tabla.style.display = 'block';
+            } else if (user.role === 'user') {
+                root.style.display = 'none';
+                tabla.style.display = 'block';
+            }
         } else {
             welcomeText.textContent = 'Bienvenido, Usuario desconocido';
             emailText.textContent = 'No disponible';
