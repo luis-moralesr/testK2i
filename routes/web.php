@@ -26,6 +26,7 @@ Route::post('/api/validate-token', function (Request $request) {
 });
 
 Route::post('/storeData', [App\Http\Controllers\SubirDatosController::class, 'storeExcelData']);
+Route::post('/subirCsv', [App\Http\Controllers\SubirDatosController::class, 'loadDataInfile']);
 Route::get('/showData', [App\Http\Controllers\ConsultaController::class, 'showData']);
 
 Auth::routes();
