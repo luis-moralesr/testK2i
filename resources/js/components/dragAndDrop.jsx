@@ -1,76 +1,76 @@
 import React, { useState } from 'react';
 import { useDropzone } from 'react-dropzone';
-import * as XLSX from 'xlsx'; // Importamos la librería xlsx
+import * as XLSX from 'xlsx';
+import axios from 'axios';
 
 const ExcelUpload = () => {
-  const [fileData, setFileData] = useState(null);
-  const [headers, setHeaders] = useState([]);
+  const [file, setFile] = useState(null);
   const [error, setError] = useState('');
+  const [headers, setHeaders] = useState([]);
+  const [tableData, setTableData] = useState([]);
 
   const { getRootProps, getInputProps } = useDropzone({
-    accept: '.xlsx, .xls', // Aceptar solo archivos Excel
-    onDrop: (acceptedFiles) => handleFileUpload(acceptedFiles)
+    accept: '.xlsx, .xls, .csv',
+    onDrop: (acceptedFiles) => handleFileUpload(acceptedFiles),
   });
 
-  // Carga y lectura del archivo Excel
   const handleFileUpload = (files) => {
-    const file = files[0];
+    const uploadedFile = files[0];
 
-    if (file) {
+    if (uploadedFile) {
       const reader = new FileReader();
+
       reader.onload = (e) => {
         try {
           const data = new Uint8Array(e.target.result);
           const workbook = XLSX.read(data, { type: 'array' });
           const worksheet = workbook.Sheets[workbook.SheetNames[0]];
-
-          // Obtener las cabeceras de la primera fila
+          const csvData = XLSX.utils.sheet_to_csv(worksheet); // Convertir hoja a CSV
           const sheetData = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
-          const extractedHeaders = sheetData[0]; // Primera fila como cabeceras
-          setHeaders(extractedHeaders);
+          const extractedHeaders = sheetData[0] || [];
 
-          // Convertimos la hoja a formato JSON, excluyendo la fila de cabeceras
-          const jsonData = XLSX.utils.sheet_to_json(worksheet);
-          setFileData(jsonData);
+          setHeaders(extractedHeaders);
+          setFile(new Blob([csvData], { type: 'text/csv' })); // Crear un Blob de CSV
           setError('');
         } catch (error) {
-          setError('Error al procesar el archivo. Asegúrate de que el archivo sea un Excel válido.');
+          setError('Error al procesar el archivo. Asegúrate de que sea válido.');
         }
       };
-      reader.readAsArrayBuffer(file);
+
+      reader.readAsArrayBuffer(uploadedFile);
     }
   };
 
   const sendToLaravel = async () => {
-    if (!fileData) {
-      setError('No hay datos para enviar.');
+    if (!file) {
+      setError('No hay archivo para enviar.');
       return;
     }
 
-    try {
-        const response = await fetch('/storeData', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'Accept': 'application/json',
-              'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
-            },
-            body: JSON.stringify({ data: fileData }),
-          });
+    const formData = new FormData();
+    formData.append('excel_file', file, 'archivo_convertido.csv');
 
-      if (response.ok) {
+    setError('');
+    try {
+      const response = await axios.post('/subirCsv', formData, {
+        headers: {
+          'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+          'Content-Type': 'multipart/form-data',
+        },
+      });
+
+      if (response.status === 200) {
         alert('Datos enviados correctamente');
-        setTimeout(() => {
-            location.reload();
-        }, 500);
+        setTimeout(() => location.reload(), 100);
+        // setFile(null); // Limpiar el drop-zone
+        // setTableData(response.data); // Asumimos que la respuesta contiene los datos para la tabla
       } else {
-        throw new Error('Error al enviar los datos');
+        throw new Error('Error al enviar los datos al controlador.');
       }
     } catch (error) {
       setError(`Error al enviar los datos: ${error.message}`);
     }
   };
-
 
   return (
     <div>
@@ -81,9 +81,9 @@ const ExcelUpload = () => {
 
       {error && <p style={{ color: 'red' }}>{error}</p>}
 
-      {/* {headers.length > 0 && (
+      {headers.length > 0 && (
         <div>
-          <h3>Pendiente por subir</h3>
+          <h3>Cabeceras detectadas:</h3>
           <ul>
             {headers.map((header, index) => (
               <li key={index}>{header}</li>
@@ -92,25 +92,57 @@ const ExcelUpload = () => {
         </div>
       )}
 
-      {fileData && (
-        <div>
-          <h3>Datos del archivo:</h3>
-          <pre>{JSON.stringify(fileData, null, 2)}</pre>
-        </div>
-      )} */}
+      <button
+        onClick={sendToLaravel}
+        disabled={!file}
+        className="btn btn-primary"
+        style={{ marginTop: '20px' }}
+      >
+        Enviar a Laravel
+      </button>
 
-      <button onClick={sendToLaravel} disabled={!fileData} className="btn btn-primary">Enviar a Laravel</button>
+      {tableData.length > 0 && (
+        <DataTable data={tableData} />
+      )}
     </div>
   );
 };
 
-// Estilo básico para el área de dropzone
+// Componente de la tabla de datos
+const DataTable = ({ data }) => {
+  return (
+    <div>
+      <table className="table table-striped" border="1" style={{ width: '100%', borderCollapse: 'collapse' }}>
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Nombre</th>
+            <th>Acción</th>
+          </tr>
+        </thead>
+        <tbody>
+          {data.map((item) => (
+            <tr key={item.id}>
+              <td>{item.id}</td>
+              <td>{`${item.nombre} ${item.paterno} ${item.materno}`}</td>
+              <td>
+                <button className="btn btn-primary">Ver más</button>
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+};
+
 const dropzoneStyle = {
   border: '2px dashed #cccccc',
-  padding: '20px',
+  padding: '10px',
   textAlign: 'center',
   cursor: 'pointer',
-  margin:'2em',
+  margin: '2em auto',
+  width: '90%',
 };
 
 export default ExcelUpload;

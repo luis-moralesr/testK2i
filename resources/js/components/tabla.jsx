@@ -8,6 +8,7 @@ const DataTable = () => {
     const [currentPage, setCurrentPage] = useState(1);
     const itemsPerPage = 100;
 
+    // Función para obtener los datos desde el servidor
     const fetchData = async () => {
         try {
             setLoading(true);
@@ -22,7 +23,7 @@ const DataTable = () => {
 
             if (response.ok) {
                 const result = await response.json();
-                setData(result);
+                setData(result); // Se actualiza el estado con los datos obtenidos
                 setError('');
             } else {
                 throw new Error('Error al obtener los datos del servidor');
@@ -30,31 +31,36 @@ const DataTable = () => {
         } catch (err) {
             setError(`Error al obtener los datos: ${err.message}`);
         } finally {
-            setLoading(false);
+            setLoading(false); // Se detiene el loading cuando se completó la petición
         }
     };
 
+    // Se ejecuta solo una vez cuando el componente se monta
     useEffect(() => {
         fetchData();
-    }, []);
+    }, []); // Dependencia vacía asegura que solo se ejecute una vez
 
+    // Función para alternar la fila expandida (mostrar más información)
     const toggleExpand = (id) => {
-        setExpandedRow(expandedRow === id ? null : id);
+        setExpandedRow(expandedRow === id ? null : id); // Si es la misma fila, se colapsa
     };
 
+    // Función para cambiar la página
     const paginate = (pageNumber) => {
-        setCurrentPage(pageNumber);
+        setCurrentPage(pageNumber); // Cambiar la página seleccionada
     };
 
+    // Cálculo de los datos de la página actual
     const currentData = data.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
 
+    // Condiciones de carga
     if (loading) return <p>Cargando datos...</p>;
     if (error) return <p>{error}</p>;
     if (!loading && data.length === 0) return <p>No se encontraron datos.</p>;
 
     return (
         <div>
-            <table class="table table-striped" border="1" style={{ width: '100%', borderCollapse: 'collapse' }}>
+            <table className="table table-striped" border="1" style={{ width: '100%', borderCollapse: 'collapse' }}>
                 <thead>
                     <tr>
                         <th>ID</th>
@@ -69,7 +75,7 @@ const DataTable = () => {
                                 <td>{item.id}</td>
                                 <td>{`${item.nombre} ${item.paterno} ${item.materno}`}</td>
                                 <td>
-                                    <button onClick={() => toggleExpand(item.id)} class="btn btn-primary">
+                                    <button onClick={() => toggleExpand(item.id)} className="btn btn-primary">
                                         {expandedRow === item.id ? 'Ocultar' : 'Ver más'}
                                     </button>
                                 </td>
@@ -105,7 +111,7 @@ const DataTable = () => {
                     {Array.from({ length: Math.ceil(data.length / itemsPerPage) }, (_, index) => (
                         <button
                             key={index}
-                            onClick={() => paginate(index + 1)}
+                            onClick={() => paginate(index + 1)} // Cambiar página
                             style={{
                                 margin: '0 5px',
                                 padding: '5px 10px',

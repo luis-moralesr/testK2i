@@ -32,17 +32,17 @@ return [
 
         'local' => [
             'driver' => 'local',
-            'root' => storage_path('app'),
+            'root' => public_path('app'),
             'throw' => false,
         ],
 
         'public' => [
             'driver' => 'local',
-            'root' => storage_path('app/public'),
-            'url' => env('APP_URL').'/storage',
+            'root' => public_path('app'),
+            'url' => env('APP_URL'),
             'visibility' => 'public',
-            'throw' => false,
         ],
+
 
         's3' => [
             'driver' => 's3',
