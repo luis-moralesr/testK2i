@@ -69,7 +69,6 @@ class SubirDatosController extends Controller
     }
 
     try {
-        // Crear la tabla temp_personas si no existe
         DB::statement("
             CREATE TABLE IF NOT EXISTS temp_personas (
                 id INT AUTO_INCREMENT PRIMARY KEY,
@@ -102,14 +101,12 @@ class SubirDatosController extends Controller
             (nombre, paterno, materno, telefono, calle, numero_exterior, numero_interior, colonia, cp)
         ";
 
-        // Ejecutar la consulta SQL
         DB::connection()->getPdo()->exec($query);
 
         // Procesar los datos desde la tabla temporal
         $tempPersonas = DB::table('temp_personas')->get();
 
         foreach ($tempPersonas as $item) {
-            // Validar o crear registros en la tabla 'Persona'
             $persona = Persona::firstOrCreate(
                 [
                     'nombre' => $item->nombre,
@@ -118,7 +115,6 @@ class SubirDatosController extends Controller
                 ]
             );
 
-            // Verificar si el teléfono ya existe, si no, crear un nuevo teléfono
             if (!Telefono::where('persona_id', $persona->id)->where('numero', $item->telefono)->exists()) {
                 Telefono::create([
                     'persona_id' => $persona->id,
@@ -126,7 +122,6 @@ class SubirDatosController extends Controller
                 ]);
             }
 
-            // Verificar si la dirección ya existe, si no, crear una nueva dirección
             if (!Direcciones::where('persona_id', $persona->id)
                 ->where('calle', $item->calle)
                 ->where('numero_exterior', $item->numero_exterior)

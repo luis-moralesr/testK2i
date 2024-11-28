@@ -31,29 +31,26 @@ const DataTable = () => {
         } catch (err) {
             setError(`Error al obtener los datos: ${err.message}`);
         } finally {
-            setLoading(false); // Se detiene el loading cuando se completó la petición
+            setLoading(false);
         }
     };
 
-    // Se ejecuta solo una vez cuando el componente se monta
     useEffect(() => {
         fetchData();
-    }, []); // Dependencia vacía asegura que solo se ejecute una vez
+    }, []);
 
-    // Función para alternar la fila expandida (mostrar más información)
     const toggleExpand = (id) => {
-        setExpandedRow(expandedRow === id ? null : id); // Si es la misma fila, se colapsa
+        setExpandedRow(expandedRow === id ? null : id);
     };
 
     // Función para cambiar la página
     const paginate = (pageNumber) => {
-        setCurrentPage(pageNumber); // Cambiar la página seleccionada
+        setCurrentPage(pageNumber);
     };
 
     // Cálculo de los datos de la página actual
     const currentData = data.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
 
-    // Condiciones de carga
     if (loading) return <p>Cargando datos...</p>;
     if (error) return <p>{error}</p>;
     if (!loading && data.length === 0) return <p>No se encontraron datos.</p>;
