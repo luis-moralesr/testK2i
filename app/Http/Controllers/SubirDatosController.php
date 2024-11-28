@@ -57,84 +57,103 @@ class SubirDatosController extends Controller
 
 
     public function loadDataInfile(Request $request)
-    {
-        if (!$request->hasFile('excel_file')) {
-            return response()->json(['error' => 'No se proporcionó ningún archivo'], 400);
-        }
+{
+    if (!$request->hasFile('excel_file')) {
+        return response()->json(['error' => 'No se proporcionó ningún archivo'], 400);
+    }
 
-        $file = $request->file('excel_file');
+    $file = $request->file('excel_file');
 
-        if ($file->getClientOriginalExtension() !== 'csv') {
-            return response()->json(['error' => 'El archivo debe ser de tipo CSV'], 400);
-        }
+    if ($file->getClientOriginalExtension() !== 'csv') {
+        return response()->json(['error' => 'El archivo debe ser de tipo CSV'], 400);
+    }
 
-        try {
-            // Guardar CSV temporalmente
-            $filePath = $file->storeAs('', 'temp_file.csv', 'public');
+    try {
+        // Crear la tabla temp_personas si no existe
+        DB::statement("
+            CREATE TABLE IF NOT EXISTS temp_personas (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                nombre VARCHAR(255),
+                paterno VARCHAR(255),
+                materno VARCHAR(255),
+                telefono VARCHAR(20),
+                calle VARCHAR(255),
+                numero_exterior VARCHAR(50),
+                numero_interior VARCHAR(50),
+                colonia VARCHAR(255),
+                cp VARCHAR(10)
+            )
+        ");
 
-            // Obtener la ruta absoluta del archivo
-            $absolutePath = public_path('app/temp_file.csv');
-            $correctedPath = str_replace('\\', '/', $absolutePath);
+        // Guardar el archivo CSV temporalmente
+        $filePath = $file->storeAs('', 'temp_file.csv', 'public');
 
-            // Ejecutar consulta SQL para cargar los datos desde el archivo
-            $query = "
-                LOAD DATA LOCAL INFILE '{$correctedPath}'
-                INTO TABLE temp_personas
-                FIELDS TERMINATED BY ',' ENCLOSED BY '\"'
-                LINES TERMINATED BY '\\n'
-                IGNORE 1 ROWS
-                (nombre, paterno, materno, telefono, calle, numero_exterior, numero_interior, colonia, cp)
-            ";
+        // Obtener la ruta absoluta del archivo
+        $absolutePath = public_path('app/temp_file.csv');
+        $correctedPath = str_replace('\\', '/', $absolutePath);
 
-            // Consulta SQL
-            DB::connection()->getPdo()->exec($query);
+        // Ejecutar consulta SQL para cargar los datos desde el archivo
+        $query = "
+            LOAD DATA LOCAL INFILE '{$correctedPath}'
+            INTO TABLE temp_personas
+            FIELDS TERMINATED BY ',' ENCLOSED BY '\"'
+            LINES TERMINATED BY '\\n'
+            IGNORE 1 ROWS
+            (nombre, paterno, materno, telefono, calle, numero_exterior, numero_interior, colonia, cp)
+        ";
 
-            // Procesar los datos desde la tabla temporal
-            $tempPersonas = DB::table('temp_personas')->get();
+        // Ejecutar la consulta SQL
+        DB::connection()->getPdo()->exec($query);
 
-            foreach ($tempPersonas as $item) {
-                $persona = Persona::firstOrCreate(
-                    [
-                        'nombre' => $item->nombre,
-                        'paterno' => $item->paterno,
-                        'materno' => $item->materno
-                    ]
-                );
+        // Procesar los datos desde la tabla temporal
+        $tempPersonas = DB::table('temp_personas')->get();
 
-                if (!Telefono::where('persona_id', $persona->id)->where('numero', $item->telefono)->exists()) {
-                    Telefono::create([
-                        'persona_id' => $persona->id,
-                        'numero' => $item->telefono
-                    ]);
-                }
+        foreach ($tempPersonas as $item) {
+            // Validar o crear registros en la tabla 'Persona'
+            $persona = Persona::firstOrCreate(
+                [
+                    'nombre' => $item->nombre,
+                    'paterno' => $item->paterno,
+                    'materno' => $item->materno
+                ]
+            );
 
-                // Verificar si la dirección ya existe, si no, crear una nueva dirección
-                if (!Direcciones::where('persona_id', $persona->id)
-                    ->where('calle', $item->calle)
-                    ->where('numero_exterior', $item->numero_exterior)
-                    ->where('colonia', $item->colonia)
-                    ->exists()) {
-                    Direcciones::create([
-                        'persona_id' => $persona->id,
-                        'calle' => $item->calle,
-                        'numero_exterior' => $item->numero_exterior,
-                        'numero_interior' => $item->numero_interior,
-                        'colonia' => $item->colonia,
-                        'cp' => $item->cp
-                    ]);
-                }
+            // Verificar si el teléfono ya existe, si no, crear un nuevo teléfono
+            if (!Telefono::where('persona_id', $persona->id)->where('numero', $item->telefono)->exists()) {
+                Telefono::create([
+                    'persona_id' => $persona->id,
+                    'numero' => $item->telefono
+                ]);
             }
 
-            DB::table('temp_personas')->truncate();
-
-            // Eliminar el archivo temporal
-            Storage::disk('public')->delete('temp_file.csv');
-
-            return response()->json(['success' => 'Datos procesados correctamente']);
-        } catch (\Exception $e) {
-            return response()->json(['error' => 'Error al procesar el archivo: ' . $e->getMessage()], 500);
+            // Verificar si la dirección ya existe, si no, crear una nueva dirección
+            if (!Direcciones::where('persona_id', $persona->id)
+                ->where('calle', $item->calle)
+                ->where('numero_exterior', $item->numero_exterior)
+                ->where('colonia', $item->colonia)
+                ->exists()) {
+                Direcciones::create([
+                    'persona_id' => $persona->id,
+                    'calle' => $item->calle,
+                    'numero_exterior' => $item->numero_exterior,
+                    'numero_interior' => $item->numero_interior,
+                    'colonia' => $item->colonia,
+                    'cp' => $item->cp
+                ]);
+            }
         }
+
+        // Limpiar la tabla temporal
+        DB::table('temp_personas')->truncate();
+
+        // Eliminar el archivo temporal
+        Storage::disk('public')->delete('temp_file.csv');
+
+        return response()->json(['success' => 'Datos procesados correctamente']);
+    } catch (\Exception $e) {
+        return response()->json(['error' => 'Error al procesar el archivo: ' . $e->getMessage()], 500);
     }
+}
 
 
 }
